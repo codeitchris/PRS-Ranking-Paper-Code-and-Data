@@ -1,6 +1,6 @@
 # PRS Ranking: A Literature-Based Benchmarking Database for Polygenic Risk Score Methods
 
-This repository contains the data and code for **"Evaluating Methods for Developing Polygenic Risk Scores with Spectral Ranking Inferences based on Literature Data."** A related preprint describing the same underlying database and framework is available on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
+This repository contains the data and code for **"Evaluating Methods for Developing Polygenic Risk Scores with Spectral Ranking Inferences based on Literature Data."** You can find the old pre-print on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
 
 We built a literature-derived benchmarking database that pools published head-to-head comparisons of 14 polygenic risk score (PRS) construction methods, drawn from both the original method-development papers and independent applied/benchmarking studies. A spectral ranking algorithm with bootstrap-based uncertainty quantification is then used to turn those scattered pairwise comparisons into an overall ranking (with confidence intervals) of the methods — either across all available data, or restricted to a specific phenotype, a specific subset of methods, or a chosen minimum number of comparisons.
 
