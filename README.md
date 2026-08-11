@@ -89,6 +89,19 @@ python python/build_custom_ranking.py --data-type method \
     --workbook data/PRSMethodPapersGitHub.xlsx --outdir ./out
 ```
 
+#### Combine method-development and applied data
+
+To pool both data sources into one comparison set — the same thing done by hand at the end of `appliedRankings.ipynb` to build some of the tables/figures — use `--data-type combined` with both workbooks:
+
+```bash
+python python/build_custom_ranking.py --data-type combined \
+    --method-workbook data/PRSMethodPapersGitHub.xlsx \
+    --applied-workbook data/PRSPaperAppliedGitHub.xlsx \
+    --outdir ./out
+```
+
+This row-stacks the two datasets' `AA0`/`WW0` matrices into a single comparison pool (aligning columns by method name first, in case the two workbooks ever list methods in a different order) before any `--methods`/`--min-comparisons` filtering is applied. `--phenotype` can't be combined with `--data-type combined`, since the method-development workbook has no phenotype labels to restrict by — a phenotype-specific slice is only available from `--data-type applied` on its own.
+
 #### Restrict to specific methods
 
 ```bash
