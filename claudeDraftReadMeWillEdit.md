@@ -40,7 +40,7 @@ Each workbook has one reference sheet and then one data sheet per source paper:
 
    `appliedRankings.ipynb` additionally normalizes each paper's raw phenotype label onto one of ~85 standardized phenotype names (via the `traitMap` dictionary) and builds a **phenotype-specific** AA0/WW0 pair for each one, stored in a `traits` dictionary.
 
-2. **R (`R/prsRankingCalculation.R`)** takes an AA0/WW0 pair and runs the spectral ranking algorithm (vanilla spectral estimator + a two-stage estimator), with a weighted bootstrap to produce confidence intervals for each method's rank. It also generates the rank plot, head-to-head table, trait-comparison table, and violin plot used in the paper.
+2. **R (`R/prsRankingCalculation.R`)** takes an AA0/WW0 pair and runs the spectral ranking algorithm (vanilla spectral estimator + a two-stage estimator), with a weighted bootstrap to produce confidence intervals for each method's rank. It also generates the rank plot, head-to-head table, trait-comparison table, violin plot, and various other figures used in the paper.
 
 ## Tutorial: running the ranking analysis
 
