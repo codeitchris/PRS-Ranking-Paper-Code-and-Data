@@ -5,7 +5,8 @@ Builds a customized AA0/WW0 comparison-matrix pair (ready to feed into
 R/prsRankingCalculation.R) from the curated literature workbooks, filtered by:
 
   --methods       a subset of PRS methods to include
-  --phenotype     a single standardized phenotype to rank (applied data only)
+  --phenotype     a single standardized phenotype to rank (works with
+                   --data-type method, applied, or combined)
   --min-comparisons  drop any method with fewer than this many comparisons
                       in the selected data (default: 10, matching the
                       threshold used in appliedRankings.ipynb)
@@ -13,7 +14,9 @@ R/prsRankingCalculation.R) from the curated literature workbooks, filtered by:
 This reproduces the matrix-building logic from python/methodRanking.ipynb and
 python/appliedRankings.ipynb (getInfo / getInfoCohort / traitMap / cleanUp),
 generalized into a single reusable, parameterized script instead of requiring
-hand edits to the notebooks each time.
+hand edits to the notebooks each time. Both notebooks build phenotype-specific
+comparison matrices from the same traitMap, so phenotype filtering works on
+either data source, or on both combined.
 
 USAGE
 -----
@@ -26,7 +29,7 @@ Rank only a subset of methods:
         --workbook ../data/PRSPaperAppliedGitHub.xlsx \
         --methods "LDpred2,PRS-CS,SBayesR,lassosum2" --outdir ./out
 
-Rank a single phenotype (applied data only):
+Rank a single phenotype:
     python build_custom_ranking.py --data-type applied \
         --workbook ../data/PRSPaperAppliedGitHub.xlsx \
         --phenotype "Breast Cancer" --outdir ./out
@@ -36,9 +39,15 @@ Change the minimum-comparisons threshold:
         --workbook ../data/PRSPaperAppliedGitHub.xlsx \
         --min-comparisons 5 --outdir ./out
 
-Method-development paper data (no phenotype splitting available):
+Method-development paper data on its own:
     python build_custom_ranking.py --data-type method \
         --workbook ../data/PRSMethodPapersGitHub.xlsx --outdir ./out
+
+Combine method-development and applied data, for a single phenotype:
+    python build_custom_ranking.py --data-type combined \
+        --method-workbook ../data/PRSMethodPapersGitHub.xlsx \
+        --applied-workbook ../data/PRSPaperAppliedGitHub.xlsx \
+        --phenotype "Schizophrenia" --outdir ./out
 
 Each run writes AA0.csv and WW0.csv to --outdir. Point
 R/prsRankingCalculation.R's `aCSV`/`wCSV` reads at those two files to get
@@ -253,6 +262,44 @@ def get_info(df, method_cols, helper, all_aa, all_ww,
         traits[phen][1].extend(w_list)
 
 
+def get_info_cohort(df, method_cols, helper, target_aa_list, target_ww_list):
+    """
+    Reproduces getInfoCohort() from appliedRankings.ipynb exactly: for a
+    handful of sheets that report per-cohort results for a single phenotype
+    (COHORT_SHEET_PHENOTYPES), every valid comparison in the sheet is added
+    to that phenotype's matrices unconditionally -- the sheet's own first
+    column (cohort names, not phenotype names) is never consulted. This is
+    on top of get_info()'s normal pass over the same sheet, which already
+    added these rows to the overall AA0/WW0 (but not to any phenotype, since
+    the cohort names don't match traitMap).
+    """
+    n_methods = len(method_cols)
+    cols = df.columns
+    r, c = df.shape
+    for x in range(r):
+        for y in range(1, c):
+            comparer = cols[y]
+            if comparer not in helper:
+                continue
+            for z in range(y + 1, c):
+                comparie = cols[z]
+                if comparie not in helper:
+                    continue
+                v1, v2 = df[comparer].iloc[x], df[comparie].iloc[x]
+                if pd.isna(v1) or pd.isna(v2):
+                    continue
+                diff = v1 - v2
+                if diff == 0:
+                    continue
+                arr = np.zeros(n_methods)
+                arr[helper[comparer]] = 1
+                arr[helper[comparie]] = 1
+                win = np.zeros(n_methods)
+                win[helper[comparer] if diff > 0 else helper[comparie]] = 1
+                target_aa_list.append(arr)
+                target_ww_list.append(win)
+
+
 def load_workbook(path, data_type):
     """Loads the models list and per-paper comparison sheets."""
     models_sheet = 'models' if data_type == 'method' else 'Method papers'
@@ -281,14 +328,10 @@ def build_matrices(method_cols, helper, data_sheets, want_phenotype=None):
         if name in COHORT_SHEET_PHENOTYPES and traits is not None:
             phen = COHORT_SHEET_PHENOTYPES[name]
             if phen in traits:
-                # cohort-level sheets are keyed by their own phenotype-style
-                # first column already, so a second pass under the fixed
-                # phenotype label captures them too, matching
-                # getInfoCohort()'s behavior in appliedRankings.ipynb
-                fake_traits = {phen: traits[phen]}
-                get_info(df, method_cols, helper, [], [],
-                         traits=fake_traits, trait_hits=trait_hits,
-                         paper_name=paper_name)
+                # unconditionally add every comparison in this sheet to the
+                # target phenotype -- matches getInfoCohort()'s behavior
+                get_info_cohort(df, method_cols, helper,
+                                 traits[phen][0], traits[phen][1])
 
     aa_df = pd.DataFrame(all_aa if want_phenotype is None else traits[want_phenotype][0],
                           columns=method_cols)
@@ -367,8 +410,9 @@ def main():
     parser.add_argument('--methods', default=None,
                          help='Comma-separated list of methods to include (default: all)')
     parser.add_argument('--phenotype', default=None,
-                         help='Standardized phenotype name to restrict to '
-                              '(applied data only, e.g. "Breast Cancer")')
+                         help='Standardized phenotype name to restrict to, '
+                              'e.g. "Breast Cancer" (works with --data-type '
+                              'method, applied, or combined)')
     parser.add_argument('--min-comparisons', type=int, default=10,
                          help='Drop methods with fewer than this many comparisons '
                               'in the selected data (default: 10)')
@@ -378,24 +422,16 @@ def main():
     if args.data_type == 'combined':
         if not args.method_workbook or not args.applied_workbook:
             sys.exit('--data-type combined requires both --method-workbook and --applied-workbook.')
-        if args.phenotype is not None:
-            sys.exit('--phenotype cannot be combined with --data-type combined -- the '
-                      'method-development workbook has no phenotype information to '
-                      'restrict to, so a phenotype-specific slice can only be built '
-                      'from --data-type applied on its own.')
 
         m_cols, m_helper, m_sheets = load_workbook(args.method_workbook, 'method')
         a_cols, a_helper, a_sheets = load_workbook(args.applied_workbook, 'applied')
-        aa_m, ww_m = build_matrices(m_cols, m_helper, m_sheets)
-        aa_a, ww_a = build_matrices(a_cols, a_helper, a_sheets)
+        aa_m, ww_m = build_matrices(m_cols, m_helper, m_sheets, want_phenotype=args.phenotype)
+        aa_a, ww_a = build_matrices(a_cols, a_helper, a_sheets, want_phenotype=args.phenotype)
         aa_df, ww_df, method_cols = combine_aa_ww(
             aa_m, ww_m, aa_a, ww_a, 'method workbook', 'applied workbook')
     else:
         if not args.workbook:
             sys.exit(f'--workbook is required for --data-type {args.data_type}.')
-        if args.phenotype is not None and args.data_type != 'applied':
-            sys.exit('--phenotype is only available for --data-type applied '
-                      '(the method-development workbook is not split by phenotype).')
 
         method_cols, helper, data_sheets = load_workbook(args.workbook, args.data_type)
         aa_df, ww_df = build_matrices(method_cols, helper, data_sheets,
