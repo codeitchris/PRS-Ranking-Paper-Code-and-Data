@@ -1,8 +1,6 @@
 # PRS Ranking: A Literature-Based Benchmarking Database for Polygenic Risk Score Methods
 
-This repository contains the data and code for **"Constructing a Literature-Derived Database for Benchmarking
-Polygenic Risk Score Construction Methods with Spectral Ranking
-Inferences."** The January Pre-print can be found on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
+This repository contains the data and code for **"Evaluating Methods for Developing Polygenic Risk Scores with Spectral Ranking Inferences based on Literature Data."** A related preprint describing the same underlying database and framework is available on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
 
 We built a literature-derived benchmarking database that pools published head-to-head comparisons of 14 polygenic risk score (PRS) construction methods, drawn from both the original method-development papers and independent applied/benchmarking studies. A spectral ranking algorithm with bootstrap-based uncertainty quantification is then used to turn those scattered pairwise comparisons into an overall ranking (with confidence intervals) of the methods — either across all available data, or restricted to a specific phenotype, a specific subset of methods, or a chosen minimum number of comparisons.
 
@@ -13,7 +11,7 @@ We built a literature-derived benchmarking database that pools published head-to
 │   └── prsRankingCalculation.R   # Spectral ranking algorithm, CI computation, figures/tables
 ├── python/
 │   ├── methodRanking.ipynb        # Builds comparison matrices from the method-development papers
-│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers, also makes some figures combining both applied and benchmarking data
+│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers
 │   └── build_custom_ranking.py    # CLI: build a filtered AA0/WW0 pair by method, phenotype, and/or threshold
 ├── data/
 │   ├── PRSMethodPapersGitHub.xlsx   # Curated data table: method-development paper comparisons
@@ -75,7 +73,7 @@ The result is a matrix `RR2` with one column per method and these rows:
 | 6 | Uniform left-sided CI for rank |
 | 7–12 | Same five quantities, using the two-stage theta estimator |
 
-The script also produces all the figures used in the paper
+The script also produces a ranked forest plot with CIs, a head-to-head `gt` table, a trait-comparison count table, and (for the applied data) a violin plot of normalized per-phenotype ranks.
 
 ### Customizing your ranking
 
@@ -102,7 +100,7 @@ python python/build_custom_ranking.py --data-type combined \
     --outdir ./out
 ```
 
-This row-stacks the two datasets' `AA0`/`WW0` matrices into a single comparison pool (aligning columns by method name first, in case the two workbooks ever list methods in a different order) before any `--methods`/`--min-comparisons` filtering is applied. `--phenotype` can't be combined with `--data-type combined`, since the method-development workbook has no phenotype labels to restrict by — a phenotype-specific slice is only available from `--data-type applied` on its own.
+This row-stacks the two datasets' `AA0`/`WW0` matrices into a single comparison pool (aligning columns by method name first, in case the two workbooks ever list methods in a different order) before any `--methods`/`--min-comparisons` filtering is applied. `--phenotype` can be combined with `--data-type combined` too — each source's phenotype-specific matrices are built independently (respecting the cohort-sheet special cases in the applied data) and then stacked together.
 
 #### Restrict to specific methods
 
@@ -117,16 +115,25 @@ python python/build_custom_ranking.py --data-type applied \
 
 #### Rank a specific phenotype
 
-Phenotype-specific ranking is only available for `--data-type applied` — the method-development workbook isn't split by phenotype, since it draws from the 14 method-development papers rather than independent applications.
+Both notebooks build a full phenotype-specific `traits` dictionary from the same `traitMap` — including for the method-development data — so `--phenotype` works with `--data-type method`, `applied`, or `combined`.
 
 ```bash
 python python/build_custom_ranking.py --data-type applied \
     --workbook data/PRSPaperAppliedGitHub.xlsx \
     --phenotype "Breast Cancer" \
     --outdir ./out
+
+# or on combined data:
+python python/build_custom_ranking.py --data-type combined \
+    --method-workbook data/PRSMethodPapersGitHub.xlsx \
+    --applied-workbook data/PRSPaperAppliedGitHub.xlsx \
+    --phenotype "Schizophrenia" \
+    --outdir ./out
 ```
 
-`--phenotype` takes a **standardized** phenotype name — the script normalizes each paper's raw label (e.g. `"BrCa-UKB"`) using the same `traitMap` as `appliedRankings.ipynb`, so pass the standardized form (e.g. `"Breast Cancer"`). See the `TRAIT_MAP` dictionary at the top of the script for the full list of raw → standardized names, or the standardized names alone in `set(TRAIT_MAP.values())`.
+`--phenotype` takes a **standardized** phenotype name — the script normalizes each paper's raw label (e.g. `"BrCa-UKB"`) using the same `traitMap` as the notebooks, so pass the standardized form (e.g. `"Breast Cancer"`). See the `TRAIT_MAP` dictionary at the top of the script for the full list of raw → standardized names, or the standardized names alone in `set(TRAIT_MAP.values())`.
+
+A handful of applied-paper sheets report results by cohort rather than by phenotype (e.g. the Alzheimer's and depression/schizophrenia cohort studies); the script folds those in for the matching phenotype exactly as `getInfoCohort()` does in `appliedRankings.ipynb`.
 
 #### Set the minimum number of comparisons required
 
