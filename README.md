@@ -75,7 +75,7 @@ The result is a matrix `RR2` with one column per method and these rows:
 | 6 | Uniform left-sided CI for rank |
 | 7–12 | Same five quantities, using the two-stage theta estimator |
 
-The script also produces a ranked forest plot with CIs, a head-to-head `gt` table, a trait-comparison count table, and (for the applied data) a violin plot of normalized per-phenotype ranks.
+The script also produces all the figures used in the paper
 
 ### Customizing your ranking
 
