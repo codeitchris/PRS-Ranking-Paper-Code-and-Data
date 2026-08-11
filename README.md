@@ -1,6 +1,8 @@
 # PRS Ranking: A Literature-Based Benchmarking Database for Polygenic Risk Score Methods
 
-This repository contains the data and code for **"Evaluating Methods for Developing Polygenic Risk Scores with Spectral Ranking Inferences based on Literature Data."** A related preprint describing the same underlying database and framework is available on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
+This repository contains the data and code for **"Constructing a Literature-Derived Database for Benchmarking
+Polygenic Risk Score Construction Methods with Spectral Ranking
+Inferences."** The January Pre-print can be found on [medRxiv](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1).
 
 We built a literature-derived benchmarking database that pools published head-to-head comparisons of 14 polygenic risk score (PRS) construction methods, drawn from both the original method-development papers and independent applied/benchmarking studies. A spectral ranking algorithm with bootstrap-based uncertainty quantification is then used to turn those scattered pairwise comparisons into an overall ranking (with confidence intervals) of the methods — either across all available data, or restricted to a specific phenotype, a specific subset of methods, or a chosen minimum number of comparisons.
 
@@ -11,7 +13,7 @@ We built a literature-derived benchmarking database that pools published head-to
 │   └── prsRankingCalculation.R   # Spectral ranking algorithm, CI computation, figures/tables
 ├── python/
 │   ├── methodRanking.ipynb        # Builds comparison matrices from the method-development papers
-│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers
+│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers, also makes some figures combining both applied and benchmarking data
 │   └── build_custom_ranking.py    # CLI: build a filtered AA0/WW0 pair by method, phenotype, and/or threshold
 ├── data/
 │   ├── PRSMethodPapersGitHub.xlsx   # Curated data table: method-development paper comparisons
