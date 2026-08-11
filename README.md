@@ -11,7 +11,7 @@ We built a literature-derived benchmarking database that pools published head-to
 │   └── prsRankingCalculation.R   # Spectral ranking algorithm, CI computation, figures/tables
 ├── python/
 │   ├── methodRanking.ipynb        # Builds comparison matrices from the method-development papers
-│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers
+│   ├── appliedRankings.ipynb      # Builds comparison matrices from the applied/benchmarking papers (along with combining method data to create data for figures and tables)
 │   └── build_custom_ranking.py    # CLI: build a filtered AA0/WW0 pair by method, phenotype, and/or threshold
 ├── data/
 │   ├── PRSMethodPapersGitHub.xlsx   # Curated data table: method-development paper comparisons
@@ -41,7 +41,7 @@ Each workbook has one reference sheet and then one data sheet per source paper:
 
    `appliedRankings.ipynb` additionally normalizes each paper's raw phenotype label onto one of ~85 standardized phenotype names (via the `traitMap` dictionary) and builds a **phenotype-specific** AA0/WW0 pair for each one, stored in a `traits` dictionary.
 
-2. **R (`R/prsRankingCalculation.R`)** takes an AA0/WW0 pair and runs the spectral ranking algorithm (vanilla spectral estimator + a two-stage estimator), with a weighted bootstrap to produce confidence intervals for each method's rank. It also generates the rank plot, head-to-head table, trait-comparison table, and violin plot used in the paper.
+2. **R (`R/prsRankingCalculation.R`)** takes an AA0/WW0 pair and runs the spectral ranking algorithm (vanilla spectral estimator + a two-stage estimator), with a weighted bootstrap to produce confidence intervals for each method's rank. It also generates the rank plot, head-to-head table, trait-comparison table, violin plot, and all figures used in the paper.
 
 ## Tutorial: running the ranking analysis
 
@@ -73,7 +73,7 @@ The result is a matrix `RR2` with one column per method and these rows:
 | 6 | Uniform left-sided CI for rank |
 | 7–12 | Same five quantities, using the two-stage theta estimator |
 
-The script also produces a ranked forest plot with CIs, a head-to-head `gt` table, a trait-comparison count table, and (for the applied data) a violin plot of normalized per-phenotype ranks.
+The script also produces a ranked forest plot with CIs, a head-to-head `gt` table, a trait-comparison count table, and (for the applied data) a violin plot of normalized per-phenotype ranks, and other figures.
 
 ### Customizing your ranking
 
