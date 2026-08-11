@@ -328,13 +328,42 @@ def apply_min_comparisons(aa_df, ww_df, min_comparisons):
     return aa_df, ww_df
 
 
+def combine_aa_ww(aa1, ww1, aa2, ww2, label1, label2):
+    """
+    Row-stacks two AA0/WW0 pairs into one combined comparison pool -- e.g.
+    method-development paper comparisons plus applied/benchmarking paper
+    comparisons, as done by hand at the end of appliedRankings.ipynb. Aligns
+    columns by method name (union of both, missing entries filled with 0)
+    in case the two workbooks ever list methods in different orders.
+    """
+    all_methods = list(dict.fromkeys(list(aa1.columns) + list(aa2.columns)))
+    if list(aa1.columns) != list(aa2.columns):
+        print(f"Note: {label1} and {label2} method-column order/contents differ; "
+              f"aligning to the union of both ({len(all_methods)} methods).",
+              file=sys.stderr)
+    aa1 = aa1.reindex(columns=all_methods, fill_value=0)
+    ww1 = ww1.reindex(columns=all_methods, fill_value=0)
+    aa2 = aa2.reindex(columns=all_methods, fill_value=0)
+    ww2 = ww2.reindex(columns=all_methods, fill_value=0)
+    aa_df = pd.concat([aa1, aa2], ignore_index=True)
+    ww_df = pd.concat([ww1, ww2], ignore_index=True)
+    return aa_df, ww_df, all_methods
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Build a customized AA0/WW0 pair for R/prsRankingCalculation.R")
-    parser.add_argument('--data-type', choices=['method', 'applied'], required=True,
+    parser.add_argument('--data-type', choices=['method', 'applied', 'combined'], required=True,
                          help="'method' = data/PRSMethodPapersGitHub.xlsx, "
-                              "'applied' = data/PRSPaperAppliedGitHub.xlsx")
-    parser.add_argument('--workbook', required=True, help='Path to the .xlsx workbook')
+                              "'applied' = data/PRSPaperAppliedGitHub.xlsx, "
+                              "'combined' = both, row-stacked into one comparison pool "
+                              "(requires --method-workbook and --applied-workbook instead of --workbook)")
+    parser.add_argument('--workbook', default=None,
+                         help='Path to the .xlsx workbook (for --data-type method or applied)')
+    parser.add_argument('--method-workbook', default=None,
+                         help='Path to the method-development workbook (for --data-type combined)')
+    parser.add_argument('--applied-workbook', default=None,
+                         help='Path to the applied/benchmarking workbook (for --data-type combined)')
     parser.add_argument('--methods', default=None,
                          help='Comma-separated list of methods to include (default: all)')
     parser.add_argument('--phenotype', default=None,
@@ -346,14 +375,31 @@ def main():
     parser.add_argument('--outdir', required=True, help='Directory to write AA0.csv/WW0.csv')
     args = parser.parse_args()
 
-    if args.phenotype is not None and args.data_type != 'applied':
-        sys.exit('--phenotype is only available for --data-type applied '
-                  '(the method-development workbook is not split by phenotype).')
+    if args.data_type == 'combined':
+        if not args.method_workbook or not args.applied_workbook:
+            sys.exit('--data-type combined requires both --method-workbook and --applied-workbook.')
+        if args.phenotype is not None:
+            sys.exit('--phenotype cannot be combined with --data-type combined -- the '
+                      'method-development workbook has no phenotype information to '
+                      'restrict to, so a phenotype-specific slice can only be built '
+                      'from --data-type applied on its own.')
 
-    method_cols, helper, data_sheets = load_workbook(args.workbook, args.data_type)
+        m_cols, m_helper, m_sheets = load_workbook(args.method_workbook, 'method')
+        a_cols, a_helper, a_sheets = load_workbook(args.applied_workbook, 'applied')
+        aa_m, ww_m = build_matrices(m_cols, m_helper, m_sheets)
+        aa_a, ww_a = build_matrices(a_cols, a_helper, a_sheets)
+        aa_df, ww_df, method_cols = combine_aa_ww(
+            aa_m, ww_m, aa_a, ww_a, 'method workbook', 'applied workbook')
+    else:
+        if not args.workbook:
+            sys.exit(f'--workbook is required for --data-type {args.data_type}.')
+        if args.phenotype is not None and args.data_type != 'applied':
+            sys.exit('--phenotype is only available for --data-type applied '
+                      '(the method-development workbook is not split by phenotype).')
 
-    aa_df, ww_df = build_matrices(method_cols, helper, data_sheets,
-                                   want_phenotype=args.phenotype)
+        method_cols, helper, data_sheets = load_workbook(args.workbook, args.data_type)
+        aa_df, ww_df = build_matrices(method_cols, helper, data_sheets,
+                                       want_phenotype=args.phenotype)
 
     if args.methods:
         keep = [m.strip() for m in args.methods.split(',')]
