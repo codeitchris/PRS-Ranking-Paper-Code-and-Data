@@ -151,7 +151,7 @@ python python/build_custom_ranking.py --data-type applied \
     --outdir ./out
 ```
 
-`--min-comparisons` (default: `10`, matching `appliedRankings.ipynb`'s `rankingCalculation()`) iteratively drops any method with fewer than that many total comparisons in the selected data, since too few comparisons can't support a reliable rank. All three flags can be combined in a single run (e.g. a specific method subset, for one phenotype, at a custom threshold).
+`--min-comparisons` (default: `10`, matching `appliedRankings.ipynb`'s `rankingCalculation()`) iteratively drops any method with fewer than that many total comparisons in the selected data, since too few comparisons can't support a reliable rank. If you would like to get all available data enter  `--min-comparisons 1`. All three flags can be combined in a single run (e.g. a specific method subset, for one phenotype, at a custom threshold).
 
 If a run leaves fewer than 2 methods or 0 comparisons, the script exits with an error rather than writing an unrankable file — try loosening `--min-comparisons`, widening `--methods`, or picking a different `--phenotype`.
 
