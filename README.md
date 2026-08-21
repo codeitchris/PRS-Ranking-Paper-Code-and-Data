@@ -162,3 +162,4 @@ Please report any issues on the Wiki page and contact jin.jin@pennmedicine.upenn
 
 ## Citation
 Sebastian, C., Yu, M. and Jin, J., 2026. Constructing a Literature-Derived Database for Benchmarking Polygenic Risk Score Construction Methods with Spectral Ranking Inferences. medRxiv, 2026-03. [Link](https://www.medrxiv.org/content/10.64898/2026.03.01.26347258v1)
+AI tools ChatGPT and Claude were utilized to aide in the production of this ReadMe and code used ot create the figures
